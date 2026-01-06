@@ -5,8 +5,36 @@ import os
 from dotenv import load_dotenv
 from typing import Optional
 
-# Load environment variables from .env file
+# Load environment variables from .env file (for local development)
 load_dotenv()
+
+# Try to import Streamlit for secrets management (for Streamlit Cloud)
+try:
+    import streamlit as st
+    HAS_STREAMLIT = True
+except ImportError:
+    HAS_STREAMLIT = False
+
+
+def get_secret(key: str, default: str = "") -> str:
+    """
+    Get secret from Streamlit secrets (production) or environment variables (local).
+
+    Priority:
+    1. Streamlit secrets (if running on Streamlit Cloud)
+    2. Environment variables (if running locally)
+    3. Default value
+    """
+    if HAS_STREAMLIT:
+        try:
+            # Try Streamlit secrets first (for Streamlit Cloud deployment)
+            return st.secrets.get(key, os.getenv(key, default))
+        except (AttributeError, FileNotFoundError):
+            # Fall back to environment variables if secrets.toml doesn't exist
+            return os.getenv(key, default)
+    else:
+        # Use environment variables for local development
+        return os.getenv(key, default)
 
 
 class Settings:
@@ -16,28 +44,28 @@ class Settings:
 
     # Default provider (can be overridden by UI)
     # Use string initially, will convert to ProviderType after class definition
-    DEFAULT_PROVIDER_STR: str = os.getenv("DEFAULT_PROVIDER", "openai")
+    DEFAULT_PROVIDER_STR: str = get_secret("DEFAULT_PROVIDER", "deepseek")
 
-    # API Keys for each provider
-    OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
-    DEEPSEEK_API_KEY: str = os.getenv("DEEPSEEK_API_KEY", "")
-    MOONSHOT_API_KEY: str = os.getenv("MOONSHOT_API_KEY", "")  # Kimi
-    GROQ_API_KEY: str = os.getenv("GROQ_API_KEY", "")  # Groq
+    # API Keys for each provider (SECURED via Streamlit secrets or .env)
+    OPENAI_API_KEY: str = get_secret("OPENAI_API_KEY", "")
+    DEEPSEEK_API_KEY: str = get_secret("DEEPSEEK_API_KEY", "")
+    MOONSHOT_API_KEY: str = get_secret("MOONSHOT_API_KEY", "")  # Kimi
+    GROQ_API_KEY: str = get_secret("GROQ_API_KEY", "")  # Groq
 
     # Model names (defaults per provider)
-    OPENAI_MODEL: str = os.getenv("OPENAI_MODEL", "gpt-4-turbo")
-    DEEPSEEK_MODEL: str = os.getenv("DEEPSEEK_MODEL", "deepseek-chat")
-    KIMI_MODEL: str = os.getenv("KIMI_MODEL", "moonshot-v1-8k")
-    GROQ_MODEL: str = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
+    OPENAI_MODEL: str = get_secret("OPENAI_MODEL", "gpt-4-turbo")
+    DEEPSEEK_MODEL: str = get_secret("DEEPSEEK_MODEL", "deepseek-chat")
+    KIMI_MODEL: str = get_secret("KIMI_MODEL", "moonshot-v1-8k")
+    GROQ_MODEL: str = get_secret("GROQ_MODEL", "llama-3.3-70b-versatile")
 
     # Legacy support (kept for backward compatibility)
-    MODEL_NAME: str = os.getenv("MODEL_NAME", "gpt-4-turbo")
-    MAX_TOKENS: int = int(os.getenv("MAX_TOKENS", "4096"))
-    TEMPERATURE: float = float(os.getenv("TEMPERATURE", "0.3"))
+    MODEL_NAME: str = get_secret("MODEL_NAME", "gpt-4-turbo")
+    MAX_TOKENS: int = int(get_secret("MAX_TOKENS", "4096"))
+    TEMPERATURE: float = float(get_secret("TEMPERATURE", "0.3"))
 
     # Application Settings
-    LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")
-    CACHE_ENABLED: bool = os.getenv("CACHE_ENABLED", "false").lower() == "true"
+    LOG_LEVEL: str = get_secret("LOG_LEVEL", "INFO")
+    CACHE_ENABLED: bool = get_secret("CACHE_ENABLED", "false").lower() == "true"
 
     # Agent Configuration
     AGENT_CONFIG = {

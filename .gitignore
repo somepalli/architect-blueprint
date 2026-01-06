@@ -41,8 +41,9 @@ ENV/
 .env.local
 .env.*.local
 
-# Streamlit
-.streamlit/
+# Streamlit (ignore secrets but allow config examples)
+.streamlit/secrets.toml
+.streamlit/config.toml
 
 # Testing
 .pytest_cache/
@@ -60,3 +61,4 @@ Thumbs.db
 # Temporary files
 *.tmp
 .cache/
+nul
